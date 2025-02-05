@@ -13,13 +13,13 @@
 # See go/apex-allowed-deps-error for more details.
 # TODO(b/157465465): introduce automated quality signals and remove this list.
 
-# go/keep-sorted start case=no
 aconfig_mediacodec_flags_c_lib(minSdkVersion:30)
 aconfig_settingslib_exported_flags_java_lib(minSdkVersion:30)
 aconfig_settingstheme_exported_flags_java_lib(minSdkVersion:21)
 aconfig_storage_file_java(minSdkVersion:29)
 aconfig_storage_reader_java(minSdkVersion:29)
 aconfigd-mainline(minSdkVersion:34)
+aconfigd_java_proto_lib(minSdkVersion:34)
 aconfigd_java_proto_lite_lib(minSdkVersion:34)
 android.app.appfunctions.exported-flags-aconfig-java(minSdkVersion:30)
 android.app.flags-aconfig-java(minSdkVersion:34)
@@ -187,6 +187,7 @@ apache-commons-io(minSdkVersion:33)
 apache-commons-lang(minSdkVersion:33)
 apache-velocity-engine-core(minSdkVersion:33)
 apache-xml(minSdkVersion:31)
+app-compat-annotations(minSdkVersion:current)
 appsearch_flags_java_lib(minSdkVersion:33)
 art-aconfig-flags-java-lib(minSdkVersion:31)
 art-aconfig-flags-lib(minSdkVersion:31)
@@ -1418,4 +1419,3 @@ wpa_supplicant_headers_mainline(minSdkVersion:30)
 wpa_supplicant_mainline(minSdkVersion:30)
 xz-java(minSdkVersion:29)
 xz-java(minSdkVersion:current)
-# go/keep-sorted end

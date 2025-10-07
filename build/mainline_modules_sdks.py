@@ -344,7 +344,7 @@ def module_sdk_project_for_module(module, root_dir):
         return "prebuilts/module_sdk/Nfc"
     if module == "rkpd":
         return "prebuilts/module_sdk/RemoteKeyProvisioning"
-    if module == "telephony2":
+    if module == "telephonycore":
         return "prebuilts/module_sdk/Telephony"
     if module == "tethering":
         return "prebuilts/module_sdk/Connectivity"
@@ -894,6 +894,12 @@ Baklava = BuildRelease(
     # prebuilts will be enabled using apex_contributions release build flags.
     preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
 )
+Baklava_1 = BuildRelease(
+    name="Baklava-1",
+    creator=create_sdk_snapshots_in_soong,
+    soong_env={},
+    preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
+)
 
 # Insert additional BuildRelease definitions for following releases here,
 # before LATEST.
@@ -1293,7 +1299,7 @@ MAINLINE_MODULES = [
         module_proto_key="STATSD",
     ),
     MainlineModule(
-        apex="com.android.telephony2",
+        apex="com.android.telephonycore",
         sdks=["telephony-module-sdk"],
         first_release=Baklava,
         last_optional_release=LATEST,

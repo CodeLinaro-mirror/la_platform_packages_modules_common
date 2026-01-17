@@ -73,8 +73,16 @@ java_defaults {
     droiddoc_options: [
         "--error UnhiddenSystemApi",
         "--error UnflaggedApi",
-        "--error-when-new FlaggedApiLiteral",
+        "--error FlaggedApiLiteral",
         "--hide CallbackInterface",
+
+        // Hide UnresolvedLink in mainline modules as it is possible, due to
+        // dependency cycles between modules and the platform, that they are
+        // referencing parts of the API that are available when building the
+        // module. Any actual issues will be detected and reported when
+        // building the framework-doc-*stubs,
+        "--hide UnresolvedLink",
+
         "--enhance-documentation",
     ],
 

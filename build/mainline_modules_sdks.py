@@ -899,6 +899,15 @@ Baklava_1 = BuildRelease(
     soong_env={},
     preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
 )
+CinnamonBun = BuildRelease(
+    name="CinnamonBun",
+    # Generate a snapshot for this build release using Soong.
+    creator=create_sdk_snapshots_in_soong,
+    # Starting with V, setting `prefer|use_source_config_var` on soong modules
+    # in prebuilts/module_sdk is not necessary.
+    # prebuilts will be enabled using apex_contributions release build flags.
+    preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
+)
 
 # Insert additional BuildRelease definitions for following releases here,
 # before LATEST.
@@ -1315,10 +1324,24 @@ MAINLINE_MODULES = [
         module_proto_key="TETHERING",
     ),
     MainlineModule(
+        apex="com.android.uprobestats",
+        sdks=["uprobestats-module-sdk"],
+        first_release=Baklava,
+        last_optional_release=LATEST,
+        module_proto_key="",
+    ),
+    MainlineModule(
         apex="com.android.uwb",
         sdks=["uwb-module-sdk"],
         first_release=Tiramisu,
         # Uwb has always been and is still optional.
+        last_optional_release=LATEST,
+        module_proto_key="",
+    ),
+    MainlineModule(
+        apex="com.android.webapp",
+        sdks=["webapp-module-sdk"],
+        first_release=CinnamonBun,
         last_optional_release=LATEST,
         module_proto_key="",
     ),

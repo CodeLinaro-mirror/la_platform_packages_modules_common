@@ -289,9 +289,15 @@ class SubprocessRunner:
     stderr: io.TextIOBase = sys.stderr
 
     def run(self, *args, **kwargs):
-        return subprocess.run(
-            *args, check=True, stdout=self.stdout, stderr=self.stderr, **kwargs
-        )
+        try:
+            print(f"Running {args} {kwargs}", flush=True)
+            return subprocess.run(
+                *args, check=True, stdout=self.stdout, stderr=self.stderr, **kwargs
+            )
+        except subprocess.CalledProcessError as e:
+            sys.stdout.flush()
+            sys.stderr.flush()
+            raise e
 
 
 def unified_diff(a, b, label_a, label_b):
@@ -387,6 +393,9 @@ class SnapshotBuilder:
     # The path to this tool.
     tool_path: str
 
+    # The path to metalava.
+    metalava_path: str
+
     # Used to run subprocesses for building snapshots.
     subprocess_runner: SubprocessRunner
 
@@ -425,6 +434,11 @@ class SnapshotBuilder:
             "SOONG_SDK_SNAPSHOT_USE_SRCJAR": "true",
         }
         extraEnv.update(build_release.soong_env)
+
+        # Set the format specifier, if needed.
+        format_specifier = build_release.signature_format_specifier
+        if format_specifier != "":
+            extraEnv["SOONG_SDK_SNAPSHOT_SIGNATURE_FORMAT_SPECIFIER"] = format_specifier
 
         # Unless explicitly specified in the calling environment set
         # TARGET_BUILD_VARIANT=user.
@@ -631,21 +645,15 @@ java_sdk_library_import {{
             self.build_target_paths(build_release, target_paths)
         return target_dict
 
-    @staticmethod
-    def reformat_signature_file(signature_file):
+    def reformat_signature_file(self, signature_file):
         """Reformat `signature_file` to a standard format.
 
         Avoids changes in format being recorded as API changes.
         """
-        # Make sure that metalava is available. It will not be available in a
-        # test environment so just return the original file in that case.
-        if shutil.which("metalava") is None:
-            return signature_file
-
         reformatted_signature_file = f"{signature_file}.reformatted"
-        subprocess.run(
+        self.subprocess_runner.run(
             [
-                "metalava",
+                self.metalava_path,
                 "signature-cat",
                 "--format",
                 # Use 6.0 as that is the latest most consistent format version
@@ -657,7 +665,6 @@ java_sdk_library_import {{
                 reformatted_signature_file,
                 signature_file,
             ],
-            check=True,
         )
         return reformatted_signature_file
 
@@ -873,6 +880,12 @@ class BuildRelease:
         PreferHandling.USE_SOURCE_CONFIG_VAR_PROPERTY
     )
 
+    # The format specifier to use when generating snapshots for this release.
+    # Must be a value suitable for passing to Metalava via the --format command
+    # line option. If this is an empty string then the snapshot will use the
+    # default value for the current build.
+    signature_format_specifier: str = "2.0:overloaded-method-order=source,add-additional-overrides=yes"
+
     # Whether the generated snapshots should include flagged APIs. Defaults to
     # false because flagged APIs are not suitable for use outside Android.
     include_flagged_apis: bool = False
@@ -1034,6 +1047,8 @@ NEXT = BuildRelease(
     # in prebuilts/module_sdk is not necessary.
     # prebuilts will be enabled using apex_contributions release build flags.
     preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
+    # Use the default signature format for the current build.
+    signature_format_specifier="",
 )
 
 # The build release for the latest build supported by this build, i.e. the
@@ -1052,6 +1067,8 @@ LATEST = BuildRelease(
     # in prebuilts/module_sdk is not necessary.
     # prebuilts will be enabled using apex_contributions release build flags.
     preferHandling=PreferHandling.USE_NO_PREFER_PROPERTY,
+    # Use the default signature format for the current build.
+    signature_format_specifier="",
 )
 
 
@@ -1829,7 +1846,7 @@ def apply_transformations(producer, tmp_dir, transformations, build_release):
         os.utime(path, (modified, modified))
 
 
-def create_producer(tool_path, skip_allowed_deps_check):
+def create_producer(tool_path, metalava_path, skip_allowed_deps_check):
     # Variables initialized from environment variables that are set by the
     # calling mainline_modules_sdks.sh.
     out_dir = os.environ["OUT_DIR"]
@@ -1839,9 +1856,13 @@ def create_producer(tool_path, skip_allowed_deps_check):
     tool_path = os.path.relpath(tool_path, top_dir)
     tool_path = tool_path.replace(".py", ".sh")
 
+    # Make it relative to ANDROID_BUILD_TOP.
+    metalava_path = os.path.relpath(metalava_path, top_dir)
+
     subprocess_runner = SubprocessRunner()
     snapshot_builder = SnapshotBuilder(
-        tool_path=tool_path,
+        tool_path=str(tool_path),
+        metalava_path=str(metalava_path),
         subprocess_runner=subprocess_runner,
         out_dir=out_dir,
         skip_allowed_deps_check=skip_allowed_deps_check,
@@ -1929,6 +1950,11 @@ def main(args):
         default="unspecified",
     )
     args_parser.add_argument(
+        "--metalava-path",
+        help="The path to metalava.",
+        default="unspecified",
+    )
+    args_parser.add_argument(
         "--build-release",
         action="append",
         choices=[br.name for br in ALL_BUILD_RELEASES],
@@ -1973,7 +1999,11 @@ def main(args):
     if not target_build_apps or args.build_platform_sdks_for_mainline:
         modules += PLATFORM_SDKS_FOR_MAINLINE
 
-    producer = create_producer(args.tool_path, args.skip_allowed_deps_check)
+    producer = create_producer(
+        args.tool_path,
+        args.metalava_path,
+        args.skip_allowed_deps_check,
+    )
     producer.dist_generate_sdk_supported_modules_file(modules)
     producer.generate_mainline_modules_info_file(
         modules, os.environ["ANDROID_BUILD_TOP"]

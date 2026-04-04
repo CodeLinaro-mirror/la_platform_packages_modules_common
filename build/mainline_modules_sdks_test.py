@@ -446,19 +446,17 @@ class TestProduceDist(unittest.TestCase):
                 ["com.android.ipsec", "com.google.android.wifi"],
             ),
             (
-                "S",
-                {
-                    "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": "S"
-                },
+                "latest",
+                {},
                 [
                     "com.android.art", "com.android.ipsec",
                     "com.google.android.wifi"
                 ],
             ),
             (
-                "latest",
+                "S",
                 {
-                    "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": "current"
+                    "SOONG_SDK_SNAPSHOT_TARGET_BUILD_RELEASE": "S"
                 },
                 [
                     "com.android.art", "com.android.ipsec",
